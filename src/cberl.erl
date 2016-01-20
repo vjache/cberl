@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
-         mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
+         mget/3, mget/4, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
 -export([remove/2]).
 
@@ -204,6 +204,9 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp, 0}).
 
+mget(PoolPid, Keys, Exp, Timeout) ->
+    execute(PoolPid, {mget, Keys, Exp, 0}, Timeout).
+
 %% @doc Get an item with a lock that has a timeout
 %% Instance libcouchbase instance to use
 %%  HashKey the key to use for hashing
@@ -284,9 +287,15 @@ foreach(Func, {PoolPid, DocName, ViewName, Args}) ->
 stop(PoolPid) ->
     poolboy:stop(PoolPid).
 
+
 execute(PoolPid, Cmd) ->
     poolboy:transaction(PoolPid, fun(Worker) ->
             gen_server:call(Worker, Cmd)
+       end).
+
+execute(PoolPid, Cmd, Timeout) ->
+    poolboy:transaction(PoolPid, fun(Worker) ->
+            gen_server:call(Worker, Cmd, Timeout)
        end).
 
 http_type(view) -> 0;
